@@ -39,7 +39,7 @@ charP c = Parser $ \input ->
     _ -> Nothing
 
 stringP :: String -> Parser String
-stringP input = sequenceA $ map charP input
+stringP = traverse charP
 
 spanP :: (Char -> Bool) -> Parser String
 spanP f = Parser $ \input ->
@@ -50,22 +50,22 @@ ws :: Parser String
 ws = spanP isSpace
 
 h1 :: Parser Markdown
-h1 = H1 <$> (stringP "# " *> (spanP isPrint))
+h1 = H1 <$> (stringP "# " *> spanP isPrint)
 
 h2 :: Parser Markdown
-h2 = H2 <$> (stringP "## " *> (spanP isPrint))
+h2 = H2 <$> (stringP "## " *> spanP isPrint)
 
 h3 :: Parser Markdown
-h3 = H3 <$> (stringP "### " *> (spanP isPrint))
+h3 = H3 <$> (stringP "### " *> spanP isPrint)
 
 h4 :: Parser Markdown
-h4 = H4 <$> (stringP "#### " *> (spanP isPrint))
+h4 = H4 <$> (stringP "#### " *> spanP isPrint)
 
 h5 :: Parser Markdown
-h5 = H5 <$> (stringP "##### " *> (spanP isPrint))
+h5 = H5 <$> (stringP "##### " *> spanP isPrint)
 
 h6 :: Parser Markdown
-h6 = H6 <$> (stringP "###### " *> (spanP isPrint))
+h6 = H6 <$> (stringP "###### " *> spanP isPrint)
 
 text :: Parser Markdown
 text = Text <$> spanP isPrint
@@ -79,19 +79,19 @@ readLines fileName = do
   return (lines input)
 
 removeEmptyString :: [String] -> [String]
-removeEmptyString list = filter (not . null) list
+removeEmptyString = filter (not . null)
 
 getValue :: Maybe t -> t
 getValue (Just value) = value
 getValue Nothing = error "parse error"
 
 parse :: [String] -> [Markdown]
-parse list = map (\x -> getValue (snd <$> runParser markdown x)) list
+parse = map (\x -> getValue (snd <$> runParser markdown x))
 
 parseFile :: FilePath -> IO ()
 parseFile fileName = do
   input <- readLines fileName
-  write $ parse (removeEmptyString input)
+  writeHtml . parse . removeEmptyString $ input
 
 parseHtml :: Markdown -> String
 parseHtml (H1 string) = "<h1>" ++ filter (/= '#') string ++ "</h1>" ++ "\n"
@@ -102,15 +102,15 @@ parseHtml (H5 string) = "<h5>" ++ filter (/= '#') string ++ "</h5>" ++ "\n"
 parseHtml (H6 string) = "<h6>" ++ filter (/= '#') string ++ "</h6>" ++ "\n"
 parseHtml (Text string) = "<p>" ++ string ++ "</p>" ++ "\n"
 
-html :: [Markdown] -> [String]
-html = map parseHtml
+-- html :: [Markdown] -> [String]
+-- html = map parseHtml
 
 getString :: [String] -> String
 getString [] = ""
 getString xs = foldr1 (\x s -> x ++ s) xs
 
-write :: [Markdown] -> IO ()
-write markdown = writeFile "output.html" (getString (html markdown))
+writeHtml :: [Markdown] -> IO ()
+writeHtml markdown = writeFile "output.html" (getString . map parseHtml $ markdown)
 
 main :: IO ()
 main = undefined
