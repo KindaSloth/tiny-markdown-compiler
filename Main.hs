@@ -102,9 +102,6 @@ parseHtml (H5 string) = "<h5>" ++ filter (/= '#') string ++ "</h5>" ++ "\n"
 parseHtml (H6 string) = "<h6>" ++ filter (/= '#') string ++ "</h6>" ++ "\n"
 parseHtml (Text string) = "<p>" ++ string ++ "</p>" ++ "\n"
 
--- html :: [Markdown] -> [String]
--- html = map parseHtml
-
 getString :: [String] -> String
 getString [] = ""
 getString xs = foldr1 (\x s -> x ++ s) xs
