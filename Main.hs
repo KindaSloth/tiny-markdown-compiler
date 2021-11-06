@@ -81,33 +81,30 @@ readLines fileName = do
 removeEmptyString :: [String] -> [String]
 removeEmptyString = filter (not . null)
 
-getValue :: Maybe t -> t
-getValue (Just value) = value
-getValue Nothing = error "parse error"
-
-parse :: [String] -> [Markdown]
-parse = map (\x -> getValue (snd <$> runParser markdown x))
+parse :: [String] -> [Maybe Markdown]
+parse = map (\x -> snd <$> runParser markdown x)
 
 parseFile :: FilePath -> IO ()
 parseFile fileName = do
   input <- readLines fileName
   writeHtml . parse . removeEmptyString $ input
 
-parseHtml :: Markdown -> String
-parseHtml (H1 string) = "<h1>" ++ filter (/= '#') string ++ "</h1>" ++ "\n"
-parseHtml (H2 string) = "<h2>" ++ filter (/= '#') string ++ "</h2>" ++ "\n"
-parseHtml (H3 string) = "<h3>" ++ filter (/= '#') string ++ "</h3>" ++ "\n"
-parseHtml (H4 string) = "<h4>" ++ filter (/= '#') string ++ "</h4>" ++ "\n"
-parseHtml (H5 string) = "<h5>" ++ filter (/= '#') string ++ "</h5>" ++ "\n"
-parseHtml (H6 string) = "<h6>" ++ filter (/= '#') string ++ "</h6>" ++ "\n"
-parseHtml (Text string) = "<p>" ++ string ++ "</p>" ++ "\n"
+parseHtml :: Markdown -> Maybe String
+parseHtml (H1 string) = Just ("<h1>" ++ filter (/= '#') string ++ "</h1>" ++ "\n")
+parseHtml (H2 string) = Just ("<h2>" ++ filter (/= '#') string ++ "</h2>" ++ "\n")
+parseHtml (H3 string) = Just ("<h3>" ++ filter (/= '#') string ++ "</h3>" ++ "\n")
+parseHtml (H4 string) = Just ("<h4>" ++ filter (/= '#') string ++ "</h4>" ++ "\n")
+parseHtml (H5 string) = Just ("<h5>" ++ filter (/= '#') string ++ "</h5>" ++ "\n")
+parseHtml (H6 string) = Just ("<h6>" ++ filter (/= '#') string ++ "</h6>" ++ "\n")
+parseHtml (Text string) = Just ("<p>" ++ string ++ "</p>" ++ "\n")
 
-getString :: [String] -> String
+getString :: [Maybe String] -> String
 getString [] = ""
-getString xs = foldr1 (\x s -> x ++ s) xs
+getString [Nothing] = ""
+getString xs = xs >>= foldr1 (\x s -> x ++ s)
 
-writeHtml :: [Markdown] -> IO ()
-writeHtml markdown = writeFile "output.html" (getString . map parseHtml $ markdown)
+writeHtml :: [Maybe Markdown] -> IO ()
+writeHtml markdown = writeFile "output.html" (getString . map (>>= parseHtml) $ markdown)
 
 main :: IO ()
 main = undefined
